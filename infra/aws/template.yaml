@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  DeployLambda:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Define si la Lambda debe desplegarse o no"
+  StageName:
+    Type: String
+    Default: "dev"
+    Description: "Stage name for the API Gateway"
+    AllowedValues:
+      - "dev"
+      - "prod"
+      - "qa"
+  
+Resources:
+
+  ApiGateway:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: EmailApi
+      StageName: !Ref StageName
+
+  EmailQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: EmailQueueDev
+      VisibilityTimeout: 60
+
+
+  EmailTrackerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EmailStatus
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: StatusCreatedAtIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  ProviderTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EmailProviders
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: priority
+          AttributeType: N
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: PriorityIndex
+          KeySchema:
+            - AttributeName: priority
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+  
+  EmailHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: EmailManagerFunction
+      CodeUri: ./../../mailer-handler/
+      Handler: dist/index.handler
+      Runtime: nodejs20.x
+      Timeout: 60
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          GATEWAY_PATH_PREFIX: !Sub "${StageName}/manager"
+          QUEUE_URL: !GetAtt EmailQueue.QueueUrl
+          EMAILS_TABLE_NAME: !Ref EmailTrackerTable
+          PROVIDERS_TABLE_NAME: !Ref ProviderTable
+          NODE_ENV: dev
+          SERVICE_NAME: MailerManager
+      Events:
+        EmailQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt EmailQueue.Arn
+        ROOT:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /manager/
+            Method: ANY
+        API:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /manager/{proxy+}
+            Method: ANY
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !Ref EmailQueue
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EmailTrackerTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProviderTable
+
+Outputs:
+  EmailQueueUrl:
+    Value: !Ref EmailQueue
+    Export:
+      Name: EmailQueueUrl
+
+  EmailTrackerTableName:
+    Description: Emails DynamoDB table name
+    Value: !Ref EmailTrackerTable
+    Export:
+      Name: EmailTrackerTableName
+  
+  ProviderTableName:
+    Description: Provider DynamoDB table name 
+    Value: !Ref ProviderTable
+    Export:
+      Name: ProviderTableName
+    
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+    Export:
+      Name: ApiUrl
