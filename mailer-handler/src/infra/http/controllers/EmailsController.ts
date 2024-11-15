@@ -19,12 +19,10 @@ class EmailsController extends BaseController {
   async sendEmail(ctx: Context) {
     const input: CreateEmailDto = await ctx.req.json()
 
-    const email = await this.service.sendEmail(input)
+    const email = await this.service.create(input)
     if (!email) {
       return ctx.json({ success: false, data: null }, 400)
     }
-
-    //this.manager.process(email)
 
     return ctx.json(email)
   }

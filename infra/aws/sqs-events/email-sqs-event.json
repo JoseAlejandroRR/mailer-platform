@@ -1,0 +1,16 @@
+{
+  "Records": [
+      {
+        "messageId": "5aea8b35-8be2-4e76-a48b-1b8957109378",
+        "receiptHandle": "AQEB9Z6aehtwM7JLCXi0pvF/QLCvZSbmLCgnCTjuMP9UBgtnfoZ3QtiVq7NGeEuXbaFwWQrGlCh6oOeCo6FccjeHDa0tgx1COBT+j5DK1qNZs415QsTucFqTWaYJD4iYIQWIZCJrGntvqaSX+EliajUWGo7WEgMsg7hhgy9sGrzX0K2qd1Bxr0Ll1yLXAF9VRBMrITRIXAt1pVZq599l+JJCXbBm6HkFD03caHzQAJdRzQhyYwTsX2zpUVbizqZ5UZB3UaOW3acCPjc+5iREJD7BgxMokMqTrjBEz/fflQg5JjVIikBSfgsLjvoNFPFCzOG4VKwxwHlB2Dhi+98FVCmcYiSsM31QScZyAK6Jza45hTOZPQHEPniaaDBcpMn74kDp",
+        "body": {"payload":{"email":{"id":"b6662795-5f28-4fab-a192-0111dd630349","body":"<h3>Email Welcome!</h3>","status":"QUEUED","subject":"Second Email","from":{"email":"josealejandror28@gmail.com","name":"Jose Rojas"},"to":[{"email":"josealejandror28@gmail.com","name":"Jose Rojas"}],"cc":[],"bcc":[],"createdAt":"2024-11-14T22:44:28.187Z","updatedAt":"2024-11-14T22:44:28.187Z"}},"eventName":"EmailQueuedEvent"},
+        "attributes": [],
+        "messageAttributes": {},
+        "md5OfBody": "cd6266f9160ed07434ec6444653c4c57",
+        "eventSource": "aws:sqs",
+        "eventSourceARN": "arn:aws:sqs:us-east-1:111493687791:EmailQueueDev",
+        "awsRegion": "us-east-1"
+      }
+    ]
+}
+

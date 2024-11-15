@@ -7,9 +7,11 @@ import ProviderRepositoryDynamoDB from '@/infra/repositories/EmailProviderReposi
 import EmailRepositoryDynamoDB from '@/infra/repositories/EmailRepositoryDynamoDB'
 import { inject, injectable } from 'tsyringe'
 import EmailProviderService from './EmailProviderService'
-import { InvalidArgumentException } from '@/domain/exeptions/InvalidArgumentException'
 import { ProviderInvokeException } from '@/domain/exeptions/ProviderInvokeException'
-import { EmailStatus } from '@/domain/enum/EmailStatus'
+import Exception from '@/domain/exeptions/Exception'
+import { MaxRetriesException } from '@/domain/exeptions/MaxRetriesException'
+
+const { MAX_RETRIES_SENDER } = process.env
 
 type SenderProvider = {
   id: string
@@ -31,6 +33,8 @@ class EmailSenderManager {
   private failureThreshold = 1
 
   private failureWindow = 60 * 1000
+
+  private maxRetries = Number(MAX_RETRIES_SENDER)
   
   constructor(
     @inject(ProviderIds.ProviderRepository) private providerRepository: ProviderRepositoryDynamoDB,
@@ -63,30 +67,13 @@ class EmailSenderManager {
     this.isInitialized = true
   }
 
-  async sendEmail(email: Email, provider: SenderProvider): Promise<boolean> {
-    try {
-      const success = await provider.service.sendEmail(email)
-      
-      return success
-    } catch (err) {
-      console.error('[EmailSenderManager.sendEmail] Error sending: ', JSON.stringify(email))
-
-      if (err instanceof InvalidArgumentException) {  
-        console.log('InvalidArgumentException check')
-        await this.emailRepository.updateStatus(email.id, EmailStatus.FAILED)
-      }
-      
-      if (err instanceof ProviderInvokeException) {
-        console.log('ProviderInvokeException check')
-        await this.handleFailure(provider)
-      }
-      
-    }
-    return false
-  }
-
-  async process(email: Email): Promise<void> {
+  async process(email: Email): Promise<[Exception | null, boolean]> {
+    let attempts = 0
     for (const provider of this.providers) {
+
+      if (attempts >= this.maxRetries) {
+        return [new MaxRetriesException(), false]
+      }
 
       if (!this.checkAvailability(provider)) {
         console.log(`Provider ${provider.name} is currently unavailable.`)
@@ -94,28 +81,42 @@ class EmailSenderManager {
       }
 
       console.log(`Attempting to send email with provider ${provider.name}`)
-      const success = await this.sendEmail(email, provider)
 
-      if (success) {
-        console.log(`Email sent successfully using provider ${provider.name}`)
-        provider.failureCount = 0
-        await this.emailRepository.updateStatus(email.id, EmailStatus.SENT)
+      try {
 
-        return
+        attempts++
+        const success = await provider.service.sendEmail(email)
+
+        if (success) {
+          console.log(`Email sent successfully using provider ${provider.name}`)
+          provider.failureCount = provider.failureCount > 0 ?  provider.failureCount - 1 : 0
+
+          return [null, success]
+        }
+
+      } catch (err) {
+        console.error('[EmailSenderManager.process] Error sending: ', provider.name, JSON.stringify(email))
+
+        if (err instanceof ProviderInvokeException) {
+          console.log('ProviderInvokeException check')
+          await this.handleFailure(provider);
+          continue;
+        }
+
+        return [err, false]
       }
     }
 
-    console.error('All providers failed to send the email')
-    await this.emailRepository.updateStatus(email.id, EmailStatus.MAX_TRIED)
+    return [new MaxRetriesException(), false]
   }
 
   private checkAvailability(provider: SenderProvider): boolean {
-    
+
     const now = Date.now()
     if (now - provider.lastFailureTime > this.failureWindow) {
       provider.failureCount = 0
     }
-  
+
     return provider.status === ProviderStatus.ACTIVE
   }
 

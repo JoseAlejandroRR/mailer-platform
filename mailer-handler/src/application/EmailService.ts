@@ -1,10 +1,12 @@
 import { CreateEmailDto } from '@/domain/dto/CreateEmailDto'
 import { Email } from '@/domain/models/Email'
-import { IEmailRepository } from '@/domain/EmailRepository'
+import { IEmailRepository } from '@/domain/repositories/IEmailRepository'
 import { EmailStatus } from '@/domain/enum/EmailStatus'
 import { ProviderIds } from '@/domain/ProviderIds'
 import { inject, injectable } from 'tsyringe'
 import EntityNotFoundException from '@/domain/exeptions/EntityNotFoundException'
+import { IEventBus } from '@/domain/IEventBus'
+import { EventType } from '@/domain/EventType'
 
 interface getEmailByStatusProps {
   status: EmailStatus,
@@ -16,12 +18,21 @@ interface getEmailByStatusProps {
 class EmailService {
 
   constructor(
-    @inject(ProviderIds.EmailRepository) private emailRepository: IEmailRepository
+    @inject(ProviderIds.EmailRepository) private emailRepository: IEmailRepository,
+    @inject(ProviderIds.EventBus) private eventBus: IEventBus
   ){ }
 
-  async sendEmail(input: CreateEmailDto): Promise<any> {
+  async create(input: CreateEmailDto): Promise<any> {
     const email = Email.create(input)
     const newEmail = await this.emailRepository.create(email)
+
+    this.eventBus.publish({
+      name: EventType.Email.CREATED,
+      payload: {
+        email: email
+      },
+      timestamp: new Date()
+    })
 
     return newEmail
   }
