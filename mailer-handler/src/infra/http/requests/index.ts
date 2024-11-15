@@ -11,3 +11,14 @@ export const OptionalInteger = (min: number = 0, max: number = 10000000) => z.co
 export const RequireEmail = () => z.string().min(1).email('Invalid Email Address')
 
 export const OptionalEmail = () => z.string().min(1).email('Invalid Email Address').optional()
+
+export const RequireEnumValue = <T extends string>(enumObj: Record<string, T>) => {
+  const enumValues = Object.values(enumObj)
+  return z.enum(enumValues as [T, ...T[]])
+}
+
+export const OptionalEnumValue = <T extends string>(enumObj: Record<string, T>) => RequireEnumValue(enumObj).optional()
+
+export const RequireUUID = () => z.string().uuid()
+
+export const OptionalUUID = () => RequireUUID().optional()

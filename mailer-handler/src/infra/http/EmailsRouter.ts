@@ -3,6 +3,7 @@ import { GatewayRouter } from './GatewayRouter'
 import EmailsController from './controllers/EmailsController'
 import PostCreateEmailRequest from './requests/PostCreateEmailRequest'
 import GetEmailsRequest from './requests/GetEmailsRequest'
+import GetEmailRequest from './requests/GetEmailRequest'
 
 @injectable()
 class EmailsRouter extends GatewayRouter {
@@ -21,6 +22,7 @@ class EmailsRouter extends GatewayRouter {
     )
 
     this.routes.get('/:emailId',
+      ...GetEmailRequest,
       this.controller.getById.bind(this.controller)
     )
 

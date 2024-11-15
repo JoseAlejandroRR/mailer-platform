@@ -1,15 +1,13 @@
-import { zValidator } from '@hono/zod-validator'
 import { MiddlewareHandler } from 'hono'
+import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { RequireEnumValue, RequireString } from '.'
-import { EmailStatus } from '@/domain/enum/EmailStatus'
-
+import { RequireUUID } from '.'
 
 /**
  * @swagger
- * /emails:
+ * /emails/{id}:
  *   get:
- *     summary: Get Emails by Status
+ *     summary: Get an existing Email
  *     security:
  *       - bearerAuth: []
  *     tags:
@@ -20,30 +18,30 @@ import { EmailStatus } from '@/domain/enum/EmailStatus'
  *         type: string
  *         example: Bearer xxxxx.yyyyy.zzzzz
  *         required: true
- *       - name: status
- *         in: query
+ *       - in: path
+ *         name: id
  *         type: string
- *         example: SENT
+ *         example:  4bcdb09e-9f6d-4e18-919a-cbabff31e8b3
  *         required: true
  *     responses:
  *       200:
- *         description: Get Emails by Status
+ *         description: Email Entity
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: "#/components/schemas/EmailViewModel"
+ *               $ref: "#/components/schemas/EmailViewModel"
+ *       404:
+ *         description: Not found
  *       400:
  *         description: Bad Request
  *       401:
  *         description: Unauthorized
  */
 
-const GetEmailsRequest: MiddlewareHandler[] = [
-  zValidator('query', z.object({
-    status: RequireEnumValue(EmailStatus)
+const GetEmailRequest: MiddlewareHandler[] = [
+  zValidator('param', z.object({
+    emailId: RequireUUID(),
   }))
 ]
 
-export default GetEmailsRequest
+export default GetEmailRequest
