@@ -5,7 +5,7 @@ const { NODE_ENV, API_GATEWAY } = process.env
 const getRelativePath = (path: string): string => {
   const extension =  NODE_ENV && NODE_ENV === 'development' ? '.ts' : '.js'
 
-  return NODE_ENV && NODE_ENV === 'development' ? `./src/${path}${extension}` : `./${path}${extension}`
+  return NODE_ENV && NODE_ENV === 'development' ? `./src/${path}${extension}` : `./dist/${path}${extension}`
 }
 
 const foldersTree = [

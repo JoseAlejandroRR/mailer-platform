@@ -12,11 +12,6 @@ import { container } from 'tsyringe'
 import { LocalEventBus } from './infra/event-bus/LocalEventBus'
 import { ProviderIds } from './domain/ProviderIds'
 import { handleSQSEvent } from './application/events'
-import { swaggerUI} from '@hono/swagger-ui'
-import { Context } from 'hono'
-import { swaggerDoc } from './infra/http/swagger'
-import { serveStatic } from '@hono/node-server/serve-static'
-import { readFile } from 'fs/promises'
 
 const { NODE_ENV, PORT } = process.env
 
@@ -26,27 +21,6 @@ const gateway: HTTPGateway = container.resolve(HTTPGateway)
 gateway.bindRoutes(httpServer)
 
 const eventBus: LocalEventBus = container.resolve(ProviderIds.EventBus)
-
-
-httpServer.get('/swagger', swaggerUI({ url:'/docs' }))
-httpServer.use('/docs', async (ctx: Context) => {
-  return ctx.json(swaggerDoc)
-})
-
-httpServer.get(
-  '/tdd-reports/*',
-  serveStatic({
-    root: './tdd-reports',
-    rewriteRequestPath: (path) => {
-      return path.replace(/^\/tdd-reports\//, './')
-    }
-  })
-)
-
-httpServer.get('/tdd-reports/', async (ctx:Context) => {
-  const reportsPage = await readFile('./resources/reports.html', { encoding: 'utf-8' })
-  return ctx.html(reportsPage)
-})
 
 
 if (PORT && NODE_ENV) {

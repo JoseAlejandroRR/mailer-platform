@@ -17,6 +17,10 @@ Parameters:
       - "dev"
       - "prod"
       - "qa"
+  SparkPostKey:
+    Type: String
+    Description: "API Key for SparkPost"
+
   
 Resources:
 
@@ -91,12 +95,16 @@ Resources:
         - arm64
       Environment:
         Variables:
-          GATEWAY_PATH_PREFIX: !Sub "${StageName}/manager"
-          QUEUE_URL: !GetAtt EmailQueue.QueueUrl
+          GATEWAY_PATH_PREFIX: !Sub "/${StageName}/manager"
+          AWS_SQS_EMAIL_URL: !GetAtt EmailQueue.QueueUrl
           EMAILS_TABLE_NAME: !Ref EmailTrackerTable
           PROVIDERS_TABLE_NAME: !Ref ProviderTable
           NODE_ENV: dev
           SERVICE_NAME: MailerManager
+          API_GATEWAY: !Sub https://xxx.execute-api.${AWS::Region}.amazonaws.com/${StageName}/manager/api
+          SPARKPOST_KEY: !Ref SparkPostKey
+          MAX_RETRIES_SENDER: 2
+          MAX_ATTEMPT_FAILS_PROVIDER: 1
       Events:
         EmailQueueEvent:
           Type: SQS
