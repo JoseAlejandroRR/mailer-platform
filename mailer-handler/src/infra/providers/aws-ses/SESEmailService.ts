@@ -1,5 +1,5 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
-import { IEmailSevice } from '@/domain/IEmailService'
+import { IEmailService } from '@/domain/IEmailService'
 import { Email } from '@/domain/models/Email'
 import { InvalidArgumentException } from '@/domain/exeptions/InvalidArgumentException'
 import { ProviderInvokeException } from '@/domain/exeptions/ProviderInvokeException'
@@ -14,7 +14,9 @@ interface BuildEmailCommandProps {
   ccAddress?: string[]
 }
 
-class SESEmailService implements IEmailSevice {
+class SESEmailService implements IEmailService {
+
+  serviceName: string = 'AWS-SES'
 
   private sesClient: SESClient
 

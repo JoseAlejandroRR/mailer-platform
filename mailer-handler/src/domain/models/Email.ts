@@ -13,6 +13,7 @@ export class Email implements ISerializable {
   public cc: EmailAddress[] = []
   public bcc: EmailAddress[] = []
   public status: EmailStatus
+  public provider: string
   public createdAt: Date
   public updatedAt: Date
 
@@ -27,6 +28,7 @@ export class Email implements ISerializable {
     this.to = data.to.map((account: EmailAddressProps) => (new EmailAddress(account.name, account.email)))
     this.cc = data.cc.map((account: EmailAddressProps) => (new EmailAddress(account.name, account.email)))
     this.bcc = data.bcc.map((account: EmailAddressProps) => (new EmailAddress(account.name, account.email)))
+    this.provider = data.provider ?? null
     this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date()
     this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date()
   }
@@ -46,9 +48,10 @@ export class Email implements ISerializable {
     return email
   }
 
-  updateStatus(status: EmailStatus) {
-    this.status = status
+  markAsSent(providerName: string) {
+    this.status = EmailStatus.SENT
     this.updatedAt = new Date()
+    this.provider = providerName
   }
 
   static fromJSON(data: Record<string, any>) {
@@ -61,6 +64,7 @@ export class Email implements ISerializable {
       to: data.to.map((addr: any) => new EmailAddress(addr.name, addr.email)),
       cc: data.cc.map((addr: any) => new EmailAddress(addr.name, addr.email)),
       bcc: data.bcc.map((addr: any) => new EmailAddress(addr.name, addr.email)),
+      provider: data.provider ?? null,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     })
@@ -78,6 +82,7 @@ export class Email implements ISerializable {
       to: this.to.map(addr => ({ email: addr.email, name: addr.name })),
       cc: this.cc.map(addr => ({ email: addr.email, name: addr.name })),
       bcc: this.bcc.map(addr => ({ email: addr.email, name: addr.name })),
+      provider: this.provider ?? null,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
     }

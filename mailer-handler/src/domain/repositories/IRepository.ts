@@ -9,4 +9,5 @@ export interface IRepository<T extends ISerializable> {
   getById(providerId: string): Promise<T | null>
 
   getAll(): Promise<T[]>
+
 }

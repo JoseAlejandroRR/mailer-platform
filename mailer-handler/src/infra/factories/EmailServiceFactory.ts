@@ -1,10 +1,10 @@
-import { IEmailSevice } from '@/domain/IEmailService'
+import { IEmailService } from '@/domain/IEmailService'
 import SESEmailService from '@/infra/providers/aws-ses/SESEmailService'
 import SparkPostSevice from '@/infra/providers/SparkPostService/SparkPostSevice'
 
 export class EmailServiceFactory {
   
-  static getInstance(name: string): IEmailSevice | null {
+  static getInstance(name: string): IEmailService | null {
     switch (name) {
       case 'AWS-SES':
         return new SESEmailService()

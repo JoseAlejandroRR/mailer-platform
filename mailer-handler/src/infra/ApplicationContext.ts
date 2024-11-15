@@ -9,11 +9,18 @@ import { IEventBus } from '@/domain/IEventBus'
 import { EmailEventHandler } from '@/application/events/EmailEventsHandler'
 import SQSProvider from './providers/aws-sqs/SQServiceProvider'
 import { IQueueService } from '@/domain/IQueueService'
+import { IEmailService } from '@/domain/IEmailService'
+import SESEmailService from './providers/aws-ses/SESEmailService'
+import SparkPostSevice from './providers/SparkPostService/SparkPostSevice'
+import EmailSenderManager from '@/application/EmailSenderManager'
+import EmailProviderEventHandler from '@/application/events/ProviderEventsHandler'
+import { EventHandler } from '@/domain/EventHandler'
 
 class ApplicationContext {
 
   static events = [
     EmailEventHandler,
+    EmailProviderEventHandler
   ]
 
   static initialize(): void {
@@ -23,12 +30,18 @@ class ApplicationContext {
     container.registerSingleton<IEventBus>(ProviderIds.EventBus, LocalEventBus)
     container.registerSingleton<IQueueService>(ProviderIds.QueueService, SQSProvider)
 
+    container.registerSingleton<EmailSenderManager>(EmailSenderManager)
+
+    container.register<IEmailService>(ProviderIds.EmailSenderService, { useClass: SESEmailService })
+    container.register<IEmailService>(ProviderIds.EmailSenderService, { useClass: SparkPostSevice })
+
     this.registerEvents()
   }
 
   private static registerEvents(): void {
     ApplicationContext.events.forEach((handler) => {
-      container.resolve(handler)
+      container.registerSingleton<EventHandler>(handler.name, handler)
+      container.resolve(handler.name)
     })
   }
 }

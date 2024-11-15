@@ -1,9 +1,12 @@
 import { IEventBus } from './IEventBus'
 
 export abstract class EventHandler {
+
+  abstract name: string
+
   constructor(protected eventBus: IEventBus) {
     this.subscribe(eventBus);
   }
 
-  protected abstract subscribe(eventBus: IEventBus): void;
+  abstract subscribe(eventBus: IEventBus): void;
 }

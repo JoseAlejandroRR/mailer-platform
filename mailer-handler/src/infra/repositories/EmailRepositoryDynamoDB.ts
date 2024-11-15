@@ -1,9 +1,9 @@
-import { Email } from '@/domain/models/Email';
+import { Email } from '@/domain/models/Email'
 import BaseRepositoryDynamoDB from './BaseRepositoryDynamoDB'
 import { IEmailRepository } from '@/domain/repositories/IEmailRepository'
 import { EmailStatus } from '@/domain/enum/EmailStatus'
 import { QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
-import { injectable } from 'tsyringe';
+import { injectable } from 'tsyringe'
 
 const { EMAILS_TABLE_NAME } = process.env
 
@@ -19,7 +19,7 @@ class EmailRepositoryDynamoDB extends BaseRepositoryDynamoDB<Email>
     try {
       const params = {
         TableName: this.tableName,
-        Key: { emailId },
+        Key: { id: emailId },
         UpdateExpression: 'SET #status = :status, updatedAt = :updatedAt',
         ExpressionAttributeNames: { '#status': 'status' },
         ExpressionAttributeValues: {
@@ -32,7 +32,7 @@ class EmailRepositoryDynamoDB extends BaseRepositoryDynamoDB<Email>
 
       return true
     } catch (err) {
-      console.log('[updateStatus]: Error:', err)
+      console.log(`[updateStatus]: Error for id: '${emailId}', `, err)
     } finally {
       return false
     }

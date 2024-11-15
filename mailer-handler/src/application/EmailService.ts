@@ -29,7 +29,7 @@ class EmailService {
     this.eventBus.publish({
       name: EventType.Email.CREATED,
       payload: {
-        email: email
+        email: newEmail
       },
       timestamp: new Date()
     })

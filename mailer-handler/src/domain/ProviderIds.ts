@@ -3,4 +3,5 @@ export enum ProviderIds {
   ProviderRepository = 'ProviderRepository',
   EventBus = 'EventBus',
   QueueService = 'QueueService',
+  EmailSenderService = 'EmailSenderService',
 }

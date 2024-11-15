@@ -1,15 +1,17 @@
 import SparkPost from 'sparkpost'
-import { IEmailSevice } from '@/domain/IEmailService'
+import { IEmailService } from '@/domain/IEmailService'
 import { Email } from '@/domain/models/Email'
 import { ProviderInvokeException } from '@/domain/exeptions/ProviderInvokeException'
 import { InvalidArgumentException } from '@/domain/exeptions/InvalidArgumentException'
 
 const { SPARKPOST_KEY } = process.env
 
-class SparkPostSevice implements IEmailSevice {
+class SparkPostSevice implements IEmailService {
 
   private client: SparkPost
   private errorCodes = [400, 422]
+
+  serviceName: string = 'SparkPost'
 
   constructor() {
     this.client = new SparkPost(String(SPARKPOST_KEY), {
@@ -44,7 +46,6 @@ async sendEmail(email: Email): Promise<boolean> {
 
       throw new ProviderInvokeException(err)
     }
-    return false
   }
   
 }

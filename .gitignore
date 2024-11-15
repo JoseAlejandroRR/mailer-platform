@@ -27,3 +27,5 @@ dist-ssr
 # Archivos de SAM y AWS
 .aws-sam/
 samconfig.toml
+
+tdd-reports/

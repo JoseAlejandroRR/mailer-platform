@@ -1,17 +1,17 @@
+import { inject, injectable, injectAll } from 'tsyringe'
 import { ProviderStatus } from '@/domain/enum/ProviderStatus'
-import { IEmailSevice } from '@/domain/IEmailService'
+import { IEmailService } from '@/domain/IEmailService'
 import { Email } from '@/domain/models/Email'
 import { ProviderIds } from '@/domain/ProviderIds'
-import { EmailServiceFactory } from '@/infra/factories/EmailServiceFactory'
-import ProviderRepositoryDynamoDB from '@/infra/repositories/EmailProviderRepositoryDynamo'
-import EmailRepositoryDynamoDB from '@/infra/repositories/EmailRepositoryDynamoDB'
-import { inject, injectable } from 'tsyringe'
-import EmailProviderService from './EmailProviderService'
 import { ProviderInvokeException } from '@/domain/exeptions/ProviderInvokeException'
 import Exception from '@/domain/exeptions/Exception'
 import { MaxRetriesException } from '@/domain/exeptions/MaxRetriesException'
+import { IProviderRepository } from '@/domain/repositories/IProviderRepository'
+import { IEmailRepository } from '@/domain/repositories/IEmailRepository'
+import { IEventBus } from '@/domain/IEventBus'
+import { EventType } from '@/domain/EventType'
 
-const { MAX_RETRIES_SENDER } = process.env
+const { MAX_ATTEMPT_FAILS_PROVIDER, MAX_RETRIES_SENDER } = process.env
 
 type SenderProvider = {
   id: string
@@ -20,8 +20,10 @@ type SenderProvider = {
   status: ProviderStatus
   failureCount: number
   lastFailureTime: number
-  service: IEmailSevice
+  service: IEmailService
 }
+
+type EmailSendResult = [Exception | null, boolean, number, string?]
 
 @injectable()
 class EmailSenderManager {
@@ -30,26 +32,26 @@ class EmailSenderManager {
 
   protected providers: SenderProvider[] = []
 
-  private failureThreshold = 1
+  private failureThreshold = Number(MAX_ATTEMPT_FAILS_PROVIDER)
 
   private failureWindow = 60 * 1000
 
   private maxRetries = Number(MAX_RETRIES_SENDER)
   
   constructor(
-    @inject(ProviderIds.ProviderRepository) private providerRepository: ProviderRepositoryDynamoDB,
-    @inject(ProviderIds.EmailRepository) private emailRepository: EmailRepositoryDynamoDB,
-    @inject(EmailProviderService) private providerService: EmailProviderService,
-  ) {
-    
-  }
+    @inject(ProviderIds.EventBus) private eventBus: IEventBus,
+    @inject(ProviderIds.ProviderRepository) private providerRepository: IProviderRepository,
+    @inject(ProviderIds.EmailRepository) private emailRepository: IEmailRepository,
+    @injectAll(ProviderIds.EmailSenderService) private senderProviders: IEmailService[],
+  ) { }
   
   async initialize() {
     if (this.isInitialized) return
     const providers = await this.providerRepository.getAll()
 
     providers.forEach((provider) => {
-      const service = EmailServiceFactory.getInstance(provider.name)
+      const service = this.senderProviders.find((sender) => sender.serviceName === provider.name)
+
       if (!service) return
 
       this.providers.push({
@@ -67,12 +69,12 @@ class EmailSenderManager {
     this.isInitialized = true
   }
 
-  async process(email: Email): Promise<[Exception | null, boolean]> {
+  async process(email: Email): Promise<EmailSendResult> {
     let attempts = 0
     for (const provider of this.providers) {
 
       if (attempts >= this.maxRetries) {
-        return [new MaxRetriesException(), false]
+        return [new MaxRetriesException(attempts), false, attempts]
       }
 
       if (!this.checkAvailability(provider)) {
@@ -83,7 +85,6 @@ class EmailSenderManager {
       console.log(`Attempting to send email with provider ${provider.name}`)
 
       try {
-
         attempts++
         const success = await provider.service.sendEmail(email)
 
@@ -91,7 +92,7 @@ class EmailSenderManager {
           console.log(`Email sent successfully using provider ${provider.name}`)
           provider.failureCount = provider.failureCount > 0 ?  provider.failureCount - 1 : 0
 
-          return [null, success]
+          return [null, success, attempts, provider.name]
         }
 
       } catch (err) {
@@ -103,11 +104,11 @@ class EmailSenderManager {
           continue;
         }
 
-        return [err, false]
+        return [err, false, attempts, provider.name]
       }
     }
 
-    return [new MaxRetriesException(), false]
+    return [new MaxRetriesException(attempts), false, attempts]
   }
 
   private checkAvailability(provider: SenderProvider): boolean {
@@ -127,9 +128,19 @@ class EmailSenderManager {
     if (provider.failureCount >= this.failureThreshold) {
       provider.status = ProviderStatus.FAILED
       console.warn(`Provider ${provider.name} marked as unavailable due to repeated failures.`)
-      await this.providerService.updateStatus(provider.id, provider.status)
+
+      this.eventBus.publish({
+        name: EventType.Provider.FAILED,
+        payload: { provider },
+        timestamp: new Date()
+      })
     }
     
+  }
+
+  public setup(options: { maxTries?: number, failureThreshold?: number }) {
+    if (options.maxTries) this.maxRetries = options.maxTries;
+    if (options.failureThreshold) this.failureThreshold = options.failureThreshold;
   }
 }
 

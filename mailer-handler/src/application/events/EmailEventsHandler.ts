@@ -11,11 +11,14 @@ import EmailSenderManager from '../EmailSenderManager'
 import { EmailStatus } from '@/domain/enum/EmailStatus'
 import { InvalidArgumentException } from '@/domain/exeptions/InvalidArgumentException'
 import { MaxRetriesException } from '@/domain/exeptions/MaxRetriesException'
+import { Email } from '@/domain/models/Email'
 
 const { AWS_SQS_EMAIL_URL } = process.env
 
 @injectable()
 export class EmailEventHandler extends EventHandler  {
+
+  public name: string = 'EmailEventHandler'
 
   constructor(
     @inject(ProviderIds.EventBus) eventBus: IEventBus,
@@ -27,7 +30,7 @@ export class EmailEventHandler extends EventHandler  {
     super(eventBus)
   }
 
-  protected subscribe(eventBus: IEventBus): void {
+  public subscribe(eventBus: IEventBus): void {
 
     eventBus.subscribe(
       EventType.Email.CREATED,
@@ -50,7 +53,7 @@ export class EmailEventHandler extends EventHandler  {
             return;
           }
 
-          console.info(`Message in queue: `, data)
+          console.info(`Message in queue: `, data.MessageId)
         })
       }
     )
@@ -59,27 +62,49 @@ export class EmailEventHandler extends EventHandler  {
       EventType.Email.QUEUED,
       async (event) => {
         const { email } = event.payload
-        console.info(`[${EventType.Email.QUEUED}] Email sending: `, email)
+        console.info(`[${EventType.Email.QUEUED}] Email sending: `, email.id)
 
-        const [err, success] = await this.manager.process(email)
+        const [err, success, attemps, provider] = await this.manager.process(email)
 
         if (err) {
           if (err instanceof InvalidArgumentException) {  
             await this.emailRepository.updateStatus(email.id, EmailStatus.FAILED);
             return
           }
-          
+
           if (err instanceof MaxRetriesException) {
             await this.emailRepository.updateStatus(email.id, EmailStatus.MAX_TRIED);
             return
           }
-          
+
           console.log('[EventException] Unexpected: ', err)
         }
 
+        eventBus.publish({
+          name: EventType.Email.SENT,
+          payload: { email, provider },
+          timestamp: new Date()
+        })
+
         await this.emailRepository.updateStatus(email.id, EmailStatus.SENT)
 
-        console.info(`[${EventType.Email.QUEUED}] Email sent: `, email.id)
+        console.info(`[${EventType.Email.QUEUED}] Email processed: `, email.id)
+    })
+
+    eventBus.subscribe(
+      EventType.Email.SENT,
+      async (event) => {
+        const { email: emailData, provider } = event.payload
+        console.info(`[${EventType.Email.QUEUED}] Email Sent: `, emailData.id)
+        const email = await this.emailRepository.getById(emailData.id)
+
+        if (!email) return;
+
+        email.markAsSent(provider)
+
+        await this.emailRepository.update(email)
+
+        console.log(`[${EventType.Email.SENT}] Email marked as Sent`, email.id)
     })
   }
 }
