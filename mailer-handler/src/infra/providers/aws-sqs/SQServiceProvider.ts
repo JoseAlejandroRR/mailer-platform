@@ -10,7 +10,7 @@ const emitter = new SQSClient({ region: AWS_REGION })
 
 class SQSProvider implements IQueueService {
 
-  publish(queue: Queue, object: MessageObject, callback?: Callback): void {
+  async publish(queue: Queue, object: MessageObject, callback?: Callback): Promise<any> {
     const { data } = object
     const params = {
       MessageBody: JSON.stringify(data),
@@ -18,19 +18,17 @@ class SQSProvider implements IQueueService {
       DelaySeconds: 0
     }
 
-    emitter
-      .send(new SendMessageCommand(params))
-      .then((data) => {
-        if (callback) {
-          callback(null, data)
-        }
-      })
-      .catch((err: Error) => {
-
-        if (callback) {
-          callback(new EventException(err.message), null)
-        }
-      })
+    try {
+      const res =  await emitter.send(new SendMessageCommand(params))
+      if (callback) {
+        callback(null, res)
+      }
+    } catch (err) {
+      console.error('[SQSProvider] Error: ', err)
+      if (callback) {
+        callback(new EventException(err.message), null)
+      }
+    }
   }
 
   consumer(

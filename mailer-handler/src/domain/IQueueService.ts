@@ -11,7 +11,7 @@ interface MessageObject {
 type Callback = (error: Error | null, data?: any) => void
 
 interface IQueueService {
-  publish(queue: Queue, object: MessageObject, callback?: Callback): void
+  publish(queue: Queue, object: MessageObject, callback?: Callback): Promise<void>
   consumer(
     queue: Queue,
     onReceive?: (message: any) => void,

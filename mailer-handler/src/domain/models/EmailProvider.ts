@@ -10,6 +10,7 @@ export class EmailProvider implements ISerializable {
   public status: ProviderStatus
   public type: ProviderType
   public endpointURL?: string
+  public log?: string
   public createdAt?: Date
   public updatedAt?: Date
 
@@ -19,6 +20,7 @@ export class EmailProvider implements ISerializable {
     this.priority = data.priority
     this.status = data.status
     this.type = data.type
+    this.log = data.log
     this.endpointURL = data.type === ProviderType.EXTERNAL ? data.endpointURL : undefined
     this.createdAt = data.createdAt ?? undefined
     this.updatedAt = data.updatedAt ?? undefined
@@ -43,6 +45,7 @@ export class EmailProvider implements ISerializable {
     if (data.status) this.status = data.status
     if (data.type) this.type = data.type
     if (data.endpointURL) this.endpointURL = data.endpointURL
+    if (data.log) this.log = data.log
 
     this.updatedAt = new Date()
   }
@@ -65,6 +68,7 @@ export class EmailProvider implements ISerializable {
       priority: this.priority,
       status: this.status,
       type: this.type,
+      log: this.log,
       endpointURL: this.endpointURL,
       createdAt: this.createdAt ? this.createdAt.toISOString() : null,
       updatedAt: this.updatedAt ? this.updatedAt.toISOString() : null

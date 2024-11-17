@@ -21,10 +21,10 @@ export class EmailProviderEventHandler extends EventHandler {
     eventBus.subscribe(
       EventType.Provider.FAILED,
       async (event) => {
-        const { provider } = event.payload
+        const { provider, error } = event.payload
         console.info(`[${EventType.Provider.FAILED}] Provider max failed: `, provider)
 
-        await this.providerRepository.updateStatus(provider.id, provider.status)
+        await this.providerRepository.updateStatus(provider.id, provider.status, error)
 
       }
     )

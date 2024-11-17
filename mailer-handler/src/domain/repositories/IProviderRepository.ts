@@ -5,6 +5,6 @@ import { IRepository } from './IRepository'
 
 export interface IProviderRepository extends IRepository<EmailProvider> {
 
-  updateStatus(providerId: string, status: ProviderStatus): Promise<boolean>
+  updateStatus(providerId: string, status: ProviderStatus, log?: string): Promise<boolean>
 
 }

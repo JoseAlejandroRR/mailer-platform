@@ -79,8 +79,8 @@ const PostCreateEmailRequest: MiddlewareHandler[] = [
     subject: RequireString(2, 50),
     body: RequireString(0, 2000),
     to: z.array(EmailAddressValidator).min(1),
-    cc: z.array(EmailAddressValidator),
-    bcc: z.array(EmailAddressValidator).min(1),
+    cc: z.array(EmailAddressValidator).optional(),
+    bcc: z.array(EmailAddressValidator).optional(),
     from: EmailAddressValidator
   }))
 ]

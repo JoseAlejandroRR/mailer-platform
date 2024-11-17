@@ -10,6 +10,7 @@ import { IProviderRepository } from '@/domain/repositories/IProviderRepository'
 import { IEmailRepository } from '@/domain/repositories/IEmailRepository'
 import { IEventBus } from '@/domain/IEventBus'
 import { EventType } from '@/domain/EventType'
+import { ProvidersNotFoundException } from '@/domain/exeptions/ProvidersNotFoundException'
 
 const { MAX_ATTEMPT_FAILS_PROVIDER, MAX_RETRIES_SENDER } = process.env
 
@@ -24,6 +25,10 @@ type SenderProvider = {
 }
 
 type EmailSendResult = [Exception | null, boolean, number, string?]
+
+const { NODE_ENV } = process.env
+
+const isDevelopment = NODE_ENV === 'development'
 
 @injectable()
 class EmailSenderManager {
@@ -47,9 +52,15 @@ class EmailSenderManager {
   
   async initialize() {
     if (this.isInitialized) return
+    this.isInitialized = true
+  }
+
+  async loadProviders(): Promise<void> {
     const providers = await this.providerRepository.getAll()
 
-    providers.forEach((provider) => {
+    providers
+      .filter((provider) => provider.status === ProviderStatus.ACTIVE)
+      .forEach((provider) => {
       const service = this.senderProviders.find((sender) => sender.serviceName === provider.name)
 
       if (!service) return
@@ -66,11 +77,19 @@ class EmailSenderManager {
     })
 
     this.providers.sort((a, b) => a.priority - b.priority)
-    this.isInitialized = true
   }
 
   async process(email: Email): Promise<EmailSendResult> {
     let attempts = 0
+
+    await this.loadProviders()
+
+    if (this.providers.length < 1) {
+      if (!isDevelopment) {
+        throw new ProvidersNotFoundException()
+      }
+    }
+
     for (const provider of this.providers) {
 
       if (attempts >= this.maxRetries) {
@@ -99,8 +118,7 @@ class EmailSenderManager {
         console.error('[EmailSenderManager.process] Error sending: ', provider.name, JSON.stringify(email))
 
         if (err instanceof ProviderInvokeException) {
-          console.log('ProviderInvokeException check')
-          await this.handleFailure(provider);
+          await this.handleFailure(provider, err);
           continue;
         }
 
@@ -121,7 +139,7 @@ class EmailSenderManager {
     return provider.status === ProviderStatus.ACTIVE
   }
 
-  private async handleFailure(provider: SenderProvider) {
+  private async handleFailure(provider: SenderProvider, err: any) {
     provider.failureCount++
     provider.lastFailureTime = Date.now()
 
@@ -131,7 +149,7 @@ class EmailSenderManager {
 
       this.eventBus.publish({
         name: EventType.Provider.FAILED,
-        payload: { provider },
+        payload: { provider, error: err },
         timestamp: new Date()
       })
     }

@@ -41,7 +41,7 @@ async sendEmail(email: Email): Promise<boolean> {
       console.error('[SparkPostSevice] Error: ', err)
 
       if (this.errorCodes.includes(err.statusCode)) {
-        throw new InvalidArgumentException(err.Code)
+        throw new InvalidArgumentException(err.statusCode)
       }
 
       throw new ProviderInvokeException(err)

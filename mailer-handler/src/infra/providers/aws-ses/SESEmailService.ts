@@ -4,7 +4,7 @@ import { Email } from '@/domain/models/Email'
 import { InvalidArgumentException } from '@/domain/exeptions/InvalidArgumentException'
 import { ProviderInvokeException } from '@/domain/exeptions/ProviderInvokeException'
 
-const { AWS_REGION } = process.env
+const { AWS_REGION, AWS_SES_CONFIGURATION_SET } = process.env
 
 interface BuildEmailCommandProps {
   subject: string
@@ -62,7 +62,7 @@ class SESEmailService implements IEmailService {
       ReplyToAddresses: [
         /* more items */
       ],
-      ConfigurationSetName: 'tracking-emails'
+      ...([undefined,'undefined',null,'false',false].includes(AWS_SES_CONFIGURATION_SET) ? {} : { ConfigurationSetName: AWS_SES_CONFIGURATION_SET })
     });
   }
 
@@ -80,14 +80,16 @@ class SESEmailService implements IEmailService {
       await this.sesClient.send(emailCommand)
       console.log('[SESEmailService] Email sent: ', email.id)
       return true
-    } catch (err) {
-      console.error('[SESEmailService] Error: ', err)
+    } catch (exception) {
+      console.error('[SESEmailService] Error: ', exception)
 
-      if (this.sesErrors.includes(err.Code)) {
-        throw new InvalidArgumentException(err.Code)
+      const { Error } = exception
+
+      if (this.sesErrors.includes(Error?.Code)) {
+        throw new InvalidArgumentException(Error.Code)
       }
 
-      throw new ProviderInvokeException(err.Code)
+      throw new ProviderInvokeException(Error?.Code ? `[${Error?.Code}]: ${Error.Message}` : undefined)
     }
   }
 }

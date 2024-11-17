@@ -38,7 +38,7 @@ export class EmailEventHandler extends EventHandler  {
         const { email } = event.payload
         console.info(`[${EventType.Email.CREATED}] Email created: `, email)
 
-        this.queueService.publish({
+        await this.queueService.publish({
           url: String(AWS_SQS_EMAIL_URL)
         }, {
           data: {
@@ -50,6 +50,7 @@ export class EmailEventHandler extends EventHandler  {
         }, async (err, data) => {
           if (err) {
             console.log('Message can`t be queued');
+            console.log(err)
             return;
           }
 
@@ -95,7 +96,7 @@ export class EmailEventHandler extends EventHandler  {
       EventType.Email.SENT,
       async (event) => {
         const { email: emailData, provider } = event.payload
-        console.info(`[${EventType.Email.QUEUED}] Email Sent: `, emailData.id)
+        console.info(`[${EventType.Email.SENT}] Email Sent: `, emailData.id)
         const email = await this.emailRepository.getById(emailData.id)
 
         if (!email) return;
