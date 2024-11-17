@@ -5,7 +5,8 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   HomeOutlined,
-  SendOutlined
+  SendOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import { Outlet, useNavigate } from 'react-router-dom'
 
@@ -48,6 +49,12 @@ export default function AdminLayout() {
               icon: <SendOutlined />,
               label: 'Mailer',
               onClick: () => goTo('/mailer')
+            },
+            {
+              key: '3',
+              icon: <ApiOutlined />,
+              label: 'Providers',
+              onClick: () => goTo('/providers')
             },
           ]}
         />
