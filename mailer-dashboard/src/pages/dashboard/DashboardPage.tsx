@@ -67,6 +67,29 @@ const columns: TableProps<EmailDto>['columns'] = [
     ),
   },
   {
+    title: 'CC',
+    key: 'cc',
+    dataIndex: 'cc',
+    // eslint-disable-next-line no-unused-vars
+    render: (_, { cc }) => (
+      <>
+        {cc.map((account) => {
+          return (
+            <Popover title={account.name} content={
+              <>
+                { account.email }
+              </>
+            } key={account.email}>
+             <Tag>
+                { account.email }
+              </Tag>
+            </Popover>
+          );
+        })}
+      </>
+    ),
+  },
+  {
     title: 'Updated At',
     key: 'updatedAt',
     // eslint-disable-next-line no-unused-vars

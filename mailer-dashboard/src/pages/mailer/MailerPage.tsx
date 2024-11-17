@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { Row, Col, Card, Input, Button, Form, Tag, Table, TableProps, Tooltip, Popover, Space, notification, Segmented, Spin } from 'antd'
-import { LoadingOutlined, SendOutlined, UndoOutlined } from '@ant-design/icons'
+import React, { useEffect, useState } from 'react'
+import { Row, Col, Card, Input, Button, Form, Tag, Table, TableProps, Tooltip, Popover, Space, notification, Segmented, Spin, Select, Drawer } from 'antd'
+import { EyeOutlined, LoadingOutlined, SendOutlined, UndoOutlined } from '@ant-design/icons'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { EmailDto } from '../../data/models/EmailDto'
@@ -10,6 +10,7 @@ import { EmailStatus } from '../../data/models/EmailStatus'
 
 import  './MailerPage.scss'
 import { AxiosError } from 'axios'
+import { EmailsTemplate } from './EmailsTemplate'
 
 type EmailRecord = EmailDto & { key: string }
 
@@ -20,8 +21,15 @@ const MailerPage: React.FC = () => {
   const { sendEmail, getEmailById } = useEmails()
   const [ lastEmail, setLastEmail ] = useState<EmailDto>()
   const [ isLoading, setIsLoading ] = useState<boolean>(false)
+  const [ showPreview, setShowPreview ] = useState(false)
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  useEffect(() => {
+    const template = EmailsTemplate[0]
+    form.setFieldsValue({ subject: template.subject})
+    setEditorValue(template.body)
+  }, [])
 
   const validateEmails = (emails: string): boolean => {
     return emails
@@ -99,6 +107,13 @@ const MailerPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleChangeTemplate = (name: string) => {
+    const template = EmailsTemplate.find((tpl) => tpl.name === name)!
+
+    form.setFieldsValue({ subject: template.subject})
+    setEditorValue(template?.body)
   }
 
   const columns: TableProps<EmailDto>['columns'] = [
@@ -179,23 +194,41 @@ const MailerPage: React.FC = () => {
   ]
 
   return (
+    <>
     <div className="mailer-page" style={{ padding: 16 }}>
       <Form form={form} layout="vertical">
       <Row gutter={16}>
         <Col span={14}>
           <Card title="Compose Email" bordered>
-           
-              <Form.Item
-                name="subject"
-                label="Subject"
-                rules={[{ required: true, message: 'Please enter a subject' }]}
-              >
-                <Input placeholder="Subject" maxLength={50} />
-              </Form.Item>
-              <Form.Item label="">
-                <ReactQuill theme="snow" value={editorValue} onChange={setEditorValue}
-                style={{ height: '200px', marginBottom: '25px'}} />
-              </Form.Item>
+            <Row gutter={20}>
+              <Col span={18}>
+                <Form.Item
+                  name="subject"
+                  label="Subject"
+                  rules={[{ required: true, message: 'Please enter a subject' }]}
+                >
+                  <Input placeholder="Subject" maxLength={50} />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  label="Template"
+                  name="template"
+                >
+                  <Select defaultValue={EmailsTemplate[0].name} onChange={handleChangeTemplate}>
+                    {
+                      EmailsTemplate.map((tpl, index) => (
+                        <Select.Option key={index} value={tpl.name }>{ tpl.name }</Select.Option>
+                      ))
+                    }
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item label="">
+              <ReactQuill theme="snow" value={editorValue} onChange={setEditorValue}
+              style={{ height: '200px', marginBottom: '25px'}} />
+            </Form.Item>
           </Card>
         </Col>
         <Col span={10}>
@@ -261,14 +294,28 @@ const MailerPage: React.FC = () => {
                 rows={2}
               />
             </Form.Item>
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              onClick={handleForm}
-              block
-            >
-              Send Email
-            </Button>
+            <Row gutter={20}>
+              <Col span={12}>
+                <Button
+                  type="default"
+                  icon={<EyeOutlined />}
+                  onClick={() => setShowPreview(true)}
+                  block
+                >
+                  Preview
+                </Button>
+              </Col>
+              <Col span={12}>
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={handleForm}
+                  block
+                >
+                  Send Email
+                </Button>
+              </Col>
+            </Row>
           </Card>
         </Col>
       </Row>
@@ -291,6 +338,18 @@ const MailerPage: React.FC = () => {
         )
       }
     </div>
+      <Drawer title="Email Preview" onClose={() => setShowPreview(false)} open={showPreview} placement='left' width={680}>
+      <div
+        dangerouslySetInnerHTML={{ __html: editorValue }}
+        style={{
+          border: '1px solid #ccc',
+          padding: '10px',
+          borderRadius: '5px',
+          backgroundColor: '#f9f9f9',
+        }}
+      />
+      </Drawer>
+    </>
   )
 }
 
