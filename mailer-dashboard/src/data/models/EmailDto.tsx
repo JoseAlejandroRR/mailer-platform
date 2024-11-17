@@ -2,7 +2,7 @@ import { EmailAddressDto } from './EmailAddressDto'
 import { EmailStatus } from './EmailStatus'
 
 export class EmailDto {
-  id!: number
+  id!: string
   subject!: string
   body!: string
   status!: EmailStatus

@@ -1,0 +1,32 @@
+.box-animation {
+  overflow: hidden;
+
+  .animation-up-down {
+    top: -20px;
+  }
+
+  .animation-down-up {
+    top: 20px;
+  }
+
+  .box-animation-box {
+    opacity: 0;
+    position: relative;
+    width: 100%;
+    animation: box-animation-transformer 1s ease forwards 2s;
+  }
+}
+
+@keyframes box-animation-up-downtransformer {
+  to{
+    top:0;
+    opacity:1;
+  }
+}
+
+@keyframes box-animation-transformer {
+  to{
+    opacity:1;
+    top: 0;
+  }
+}

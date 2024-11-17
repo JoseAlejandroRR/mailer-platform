@@ -1,0 +1,41 @@
+.mailer-page {
+
+  .loading-spinner {
+    background: rgba(0,0,0,0.1);
+    border-radius: 3px;
+    padding: 10px;
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@keyframes fadeInHighlight {
+  0% {
+    background-color: #e6f7ff;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes slideInFromBottom {
+  0% {
+    transform: translateY(20%);
+    opacity: 0;
+  }
+  80% {
+    transform: translateY(-5%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.highlighted-row {
+  animation: slideInFromBottom 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+}

@@ -1,3 +1,4 @@
+import { CreateEmailDto } from '../models/CreateEmailDto'
 import { EmailDto } from '../models/EmailDto'
 import { EmailStatus } from '../models/EmailStatus'
 import BackendService from './BackendService'
@@ -12,13 +13,13 @@ class EmailsServiceAPI extends BackendService {
     return this.get<EmailDto[]>('', { params: { status } })
   }
 
-  async getById(id: number): Promise<EmailDto> {
+  async getById(id: string): Promise<EmailDto> {
     return this.get<EmailDto>(`/${id}`)
   }
 
-  /*async createOne(input: CreateEmployeeDto): Promise<EmployeeDto> {
-    return this.post<EmployeeDto>('/', input)
-  }*/
+  async sendEmail(input: CreateEmailDto): Promise<EmailDto> {
+    return this.post<EmailDto>('', input)
+  }
 
 }
 

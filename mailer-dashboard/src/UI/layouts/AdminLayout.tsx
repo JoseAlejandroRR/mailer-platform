@@ -46,8 +46,8 @@ export default function AdminLayout() {
             {
               key: '2',
               icon: <SendOutlined />,
-              label: 'Playground',
-              onClick: () => goTo('/playground')
+              label: 'Mailer',
+              onClick: () => goTo('/mailer')
             },
           ]}
         />

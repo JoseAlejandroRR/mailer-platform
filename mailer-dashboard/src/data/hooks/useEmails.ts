@@ -2,6 +2,7 @@ import { useState } from "react"
 import { EmailDto } from "../models/EmailDto"
 import EmailsServiceAPI from "../services/EmailsServiceAPI"
 import { EmailStatus } from "../models/EmailStatus"
+import { CreateEmailDto } from "../models/CreateEmailDto"
 
 const emailService = new EmailsServiceAPI()
 
@@ -28,11 +29,41 @@ const useEmails = () => {
     return []
   }
 
+  const getEmailById = async (emailId: string): Promise<EmailDto | null> => {
+    setLoading(true)
+    try {
+      const data = await emailService.getById(emailId)
+      return data
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+    return null
+  }
+
+  const sendEmail = async (input: CreateEmailDto): Promise<EmailDto | null> => {
+    setLoading(true)
+    try {
+      const data = await emailService.sendEmail(input)
+
+      return data
+    } catch (err) {
+      setError((err as Error).message)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+    return null
+  }
+
   return {
     emails,
     loading,
     error,
     getEmailsByStatus,
+    getEmailById,
+    sendEmail,
   }
 }
 
