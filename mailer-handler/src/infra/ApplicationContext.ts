@@ -15,6 +15,7 @@ import SparkPostSevice from './providers/SparkPostService/SparkPostSevice'
 import EmailSenderManager from '@/application/EmailSenderManager'
 import EmailProviderEventHandler from '@/application/events/ProviderEventsHandler'
 import { EventHandler } from '@/domain/EventHandler'
+import MailerSenderSandbox from './providers/mailer-sender-sanbox/MailerSenderSandbox'
 
 class ApplicationContext {
 
@@ -34,6 +35,7 @@ class ApplicationContext {
 
     container.register<IEmailService>(ProviderIds.EmailSenderService, { useClass: SESEmailService })
     container.register<IEmailService>(ProviderIds.EmailSenderService, { useClass: SparkPostSevice })
+    container.register<IEmailService>(ProviderIds.EmailSenderService, { useClass: MailerSenderSandbox })
 
     this.registerEvents()
   }
