@@ -14,7 +14,7 @@ const DatetimeView: React.FC<DatetimeViewProps> = ({ datetime, format = 'short' 
           { datetime?.toISOString() }
         </>
       }>
-        { format === 'long'?  datetime?.toUTCString() :DateToShortTextFormat(datetime)}
+        { format === 'long' ? datetime?.toUTCString() : DateToShortTextFormat(datetime) }
       </Popover>
     </>
   )

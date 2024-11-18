@@ -11,6 +11,7 @@ import { EmailStatus } from '../../data/models/EmailStatus'
 import  './MailerPage.scss'
 import { AxiosError } from 'axios'
 import { EmailsTemplate } from './EmailsTemplate'
+import EmailRenderPreview from '../../UI/components/email-preview/EmailRenderPreview'
 
 const SENDER_ADDRESSES: string[] = (import.meta.env.VITE_SENDER_EMAIL_ADDRESSES ? import.meta.env.VITE_SENDER_EMAIL_ADDRESSES.toString().split(',') : [])
 
@@ -24,6 +25,7 @@ const MailerPage: React.FC = () => {
   const [ lastEmail, setLastEmail ] = useState<EmailDto>()
   const [ isLoading, setIsLoading ] = useState<boolean>(false)
   const [ showPreview, setShowPreview ] = useState(false)
+  const [ emailPreview, setEmailPreview ] = useState<EmailDto>(new EmailDto())
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -32,6 +34,8 @@ const MailerPage: React.FC = () => {
     form.setFieldsValue({
       subject: template.subject,
       from: SENDER_ADDRESSES[0],
+      to: '',
+      cc: '',
     })
     setEditorValue(template.body)
   }, [])
@@ -43,22 +47,28 @@ const MailerPage: React.FC = () => {
       .every((email) => emailRegex.test(email))
   }
 
+  const buildEmailFromValues = (values: any) => {
+
+    const email: CreateEmailDto = {
+      subject: values.subject,
+      from: { name: values.from, email: values.from },
+      to: (values.to || '').trim().split(',').map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
+      cc: (values.cc || '').trim().split(',')
+        .filter((item: string) => item.length > 0)
+        .map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
+      body: editorValue,
+      status: EmailStatus.DRAFT,
+      bcc: []
+    }
+
+    return email
+  }
+
   const handleForm = async() => {
     form.validateFields().then(async (values) => {
-      const serializedBody = JSON.stringify(editorValue)
+      const email = buildEmailFromValues(values)
 
-      const newRecord: CreateEmailDto = {
-        subject: values.subject,
-        from: { name: values.from, email: values.from },
-        to: (values.to || '').trim().split(',').map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
-        cc: (values.cc || '').trim().split(',')
-          .filter((item: string) => item.length > 0)
-          .map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
-        body: serializedBody,
-        bcc: []
-      }
-
-      const res = await handleSendEmail(newRecord)
+      const res = await handleSendEmail(email)
       if (!res) return;
  
       form.setFieldsValue({
@@ -123,6 +133,18 @@ const MailerPage: React.FC = () => {
 
     form.setFieldsValue({ subject: template.subject})
     setEditorValue(template?.body)
+  }
+
+  const handleShowDraft = () => {
+    const email: EmailDto = new EmailDto()
+    Object.assign(email, buildEmailFromValues(form.getFieldsValue()))
+    setEmailPreview(email)
+    setShowPreview(true)
+  }
+
+  const handleShowView = (email: EmailDto) => {
+    setEmailPreview(email)
+    setShowPreview(true)
   }
 
   const columns: TableProps<EmailDto>['columns'] = [
@@ -190,6 +212,9 @@ const MailerPage: React.FC = () => {
       // eslint-disable-next-line no-unused-vars
       render: (status, record) => (
         <Space size="middle">
+          <Tooltip title={"View"}>
+            <Button icon={<EyeOutlined /> } type='text' onClick={() => handleShowView(record)} />
+          </Tooltip>
           <Tooltip title="Refresh">
             <Button onClick={() => handleRefreshStatus(record)} type="text" icon={<UndoOutlined />} />
           </Tooltip>
@@ -308,7 +333,7 @@ const MailerPage: React.FC = () => {
                 <Button
                   type="default"
                   icon={<EyeOutlined />}
-                  onClick={() => setShowPreview(true)}
+                  onClick={handleShowDraft}
                   block
                 >
                   Preview
@@ -349,15 +374,7 @@ const MailerPage: React.FC = () => {
       }
     </div>
       <Drawer title="Email Preview" onClose={() => setShowPreview(false)} open={showPreview} placement='left' width={680}>
-      <div
-        dangerouslySetInnerHTML={{ __html: editorValue }}
-        style={{
-          border: '1px solid #ccc',
-          padding: '10px',
-          borderRadius: '5px',
-          backgroundColor: '#f9f9f9',
-        }}
-      />
+        <EmailRenderPreview email={emailPreview} />
       </Drawer>
     </>
   )

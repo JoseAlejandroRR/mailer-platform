@@ -1,131 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Card, Col, Divider, Popover, Row, Segmented, Space, Statistic, Table, TableProps, Tag, Tooltip } from 'antd'
-import { ClockCircleOutlined, LineChartOutlined, WarningOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Divider, Drawer, Popover, Row, Segmented, Space, Statistic, Table, TableProps, Tag, Tooltip } from 'antd'
+import { ClockCircleOutlined, EyeOutlined, LineChartOutlined, WarningOutlined } from '@ant-design/icons'
 import useEmails from '../../data/hooks/useEmails'
 import { EmailStatus } from '../../data/models/EmailStatus'
 import { EmailDto } from '../../data/models/EmailDto'
-import { DateToShortTextFormat, DateToTextRelative } from '../../data/utils'
 import { useIsFirstRender } from '../../UI/utils'
+import EmailRenderPreview from '../../UI/components/email-preview/EmailRenderPreview'
 
-
-const columns: TableProps<EmailDto>['columns'] = [
-  {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-    render: (id) => <>
-      <Tooltip title={id}>
-        { id.substring(0, 8) }
-      </Tooltip>
-    </>,
-  },
-  {
-    title: 'Subject',
-    dataIndex: 'subject',
-    key: 'subject',
-    render: (subject) => <span>{subject}</span>,
-  },
-  {
-    title: 'From',
-    dataIndex: 'from',
-    key: 'from',
-    render: (from) => (
-      <>
-      <Popover title={from.name} content={
-        <>
-          { from.email }
-        </>
-      }>
-       <Tag key={from.email}>
-          { from.email }
-        </Tag>
-      </Popover>
-      </>
-    ),
-  },
-  {
-    title: 'To',
-    key: 'to',
-    dataIndex: 'to',
-    // eslint-disable-next-line no-unused-vars
-    render: (_, { to }) => (
-      <>
-        {to.map((account) => {
-          return (
-            <Popover title={account.name} content={
-              <>
-                { account.email }
-              </>
-            } key={account.email}>
-             <Tag>
-                { account.email }
-              </Tag>
-            </Popover>
-          );
-        })}
-      </>
-    ),
-  },
-  {
-    title: 'CC',
-    key: 'cc',
-    dataIndex: 'cc',
-    // eslint-disable-next-line no-unused-vars
-    render: (_, { cc }) => (
-      <>
-        {cc.map((account) => {
-          return (
-            <Popover title={account.name} content={
-              <>
-                { account.email }
-              </>
-            } key={account.email}>
-             <Tag>
-                { account.email }
-              </Tag>
-            </Popover>
-          );
-        })}
-      </>
-    ),
-  },
-  {
-    title: 'Updated At',
-    key: 'updatedAt',
-    // eslint-disable-next-line no-unused-vars
-    render: (_, { updatedAt }) => (
-      <Space size="middle">
-        <Popover title={DateToTextRelative(updatedAt)} content={
-          <>
-            { updatedAt }
-          </>
-        }>
-          { DateToShortTextFormat(updatedAt) }
-        </Popover>
-      </Space>
-    ),
-  },
-  {
-    title: 'Action',
-    key: 'action',
-    // eslint-disable-next-line no-unused-vars
-    render: (_, record) => (
-      <Space size="middle">
-        <Tooltip title="Tracking">
-          { record.provider && (
-           <Popover title={"Tracking"} content={
-            <>
-              Sent with: { record.provider }
-            </>
-          }>
-            <Button icon={<LineChartOutlined /> } type='text' />
-          </Popover>
-          )}
-        </Tooltip>
-      </Space>
-    ),
-  },
-]
 
 const emailDataInitial: Record<EmailStatus, EmailDto[]> = {
   [EmailStatus.SENT]: [],
@@ -134,7 +15,8 @@ const emailDataInitial: Record<EmailStatus, EmailDto[]> = {
   [EmailStatus.FAILED]: [],
   [EmailStatus.PENDING]: [],
   [EmailStatus.DELIVERED]: [],
-  [EmailStatus.MAX_TRIED]: []
+  [EmailStatus.MAX_TRIED]: [],
+  [EmailStatus.DRAFT]: [],
 }
 
 const DashboardStatus = {
@@ -149,6 +31,8 @@ const DashboardPage: React.FC = () => {
   const [ currentView, setCurrentView ] = useState<EmailStatus>(EmailStatus.SENT)
   const [ emailData, setEmailData ] = useState(emailDataInitial)
   const { getEmailsByStatus, loading: loadingEmails } = useEmails()
+  const [ emailSelected, setEmailSelected ] = useState<EmailDto | null>(null)
+  const [ showDetails, setShowDetails ] = useState<boolean>(true)
   const [requestStatus, setRequestStatus] = useState([
     EmailStatus.SENT,
     EmailStatus.QUEUED,
@@ -165,7 +49,7 @@ const DashboardPage: React.FC = () => {
 
       const currentStatus: EmailStatus = requestStatus.shift()!
         const data = await getEmailsByStatus({ status: currentStatus! })
-        setEmailData((state) => ({ ...state, [currentStatus]: data.map((item) => ({ ...item, key:item.id})) }))
+        setEmailData((state) => ({ ...state, [currentStatus]: data.map((item) => ({ ...item, key:item.id})).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()) }))
         setRequestStatus([...requestStatus])
     })()
   }, [requestStatus])
@@ -182,13 +66,145 @@ const DashboardPage: React.FC = () => {
     setCurrentView(panel!.status)
   }
 
+  const handleShowEmail = (email: EmailDto) => {
+    setShowDetails(true)
+    setEmailSelected(email)
+  }
+
+  const columns: TableProps<EmailDto>['columns'] = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      render: (id, email) => <>
+        <Space>
+
+        <Tooltip title={`${new Date(email.createdAt).toLocaleString()}`}>
+          <ClockCircleOutlined style={{ fontSize: '16px', cursor: 'pointer' }} />
+        </Tooltip>
+        <Tooltip title={id}>
+          { id.substring(0, 8) }
+        </Tooltip>
+        </Space>
+      </>,
+    },
+    {
+      title: 'Subject',
+      dataIndex: 'subject',
+      key: 'subject',
+      render: (subject) => <span>{subject}</span>,
+    },
+    {
+      title: 'From',
+      dataIndex: 'from',
+      key: 'from',
+      render: (from) => (
+        <>
+        <Popover title={from.name} content={
+          <>
+            { from.email }
+          </>
+        }>
+         <Tag key={from.email}>
+            { from.email }
+          </Tag>
+        </Popover>
+        </>
+      ),
+    },
+    {
+      title: 'To',
+      key: 'to',
+      dataIndex: 'to',
+      // eslint-disable-next-line no-unused-vars
+      render: (_, { to }) => (
+        <>
+          {to.map((account) => {
+            return (
+              <Popover title={account.name} content={
+                <>
+                  { account.email }
+                </>
+              } key={account.email}>
+               <Tag>
+                  { account.email }
+                </Tag>
+              </Popover>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      title: 'CC',
+      key: 'cc',
+      dataIndex: 'cc',
+      // eslint-disable-next-line no-unused-vars
+      render: (_, { cc }) => (
+        <>
+          {cc.map((account) => {
+            return (
+              <Popover title={account.name} content={
+                <>
+                  { account.email }
+                </>
+              } key={account.email}>
+               <Tag>
+                  { account.email }
+                </Tag>
+              </Popover>
+            );
+          })}
+        </>
+      ),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      // eslint-disable-next-line no-unused-vars
+      render: (_, record) => (
+        <Space size="middle">
+          <Tooltip title={"View"}>
+            <Button icon={<EyeOutlined /> } type='text' onClick={() => handleShowEmail(record)} />
+          </Tooltip>
+          { record.provider && (
+            <Popover title={"Tracking"} content={
+            <>
+              Sent with: { record.provider }
+            </>
+          }>
+            <Button icon={<LineChartOutlined /> } type='text' />
+          </Popover>
+          )}
+        </Space>
+      ),
+    },
+  ]
+
+  const handleLoadMore = async () => {
+    const lastEmail = emailData[currentView][emailData[currentView].length-1]
+
+    const data = await getEmailsByStatus({
+      status: currentView,
+      cursor: {
+        status: currentView, cursorId: lastEmail.id, createdAt: lastEmail.createdAt
+      }
+    })
+
+    const emails = [...emailData[currentView] ,...data.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())]
+
+    setEmailData((state) => ({
+      ...state,
+      [currentView]: emails.map((item) => ({ ...item, key:item.id}))
+    }))
+  }
+
   return (
     <>
       <div className="page-dashboard">
         <Row gutter={20}>
           {
             Object.values(DashboardStatus).map((panel, index) => (
-              <>
               <Col span={6} key={index}>
                 <Card>
                   <Statistic
@@ -199,16 +215,28 @@ const DashboardPage: React.FC = () => {
                   />
                 </Card>
               </Col>
-            </>
             ))
           }
         </Row>
         <Divider />
-        <Segmented options={Object.values(DashboardStatus).map((panel) => panel.title)}
+        <Segmented value={currentView} options={Object.values(DashboardStatus).map((panel) => panel.title)}
           onChange={handleCurrentView} block />
         <Divider />
-        <Table<EmailDto> columns={columns} dataSource={emailData[currentView]} loading={loadingEmails}  />
+        <Table<EmailDto> columns={columns} dataSource={emailData[currentView]}
+          loading={loadingEmails} pagination={false}  />
+          <Space direction="vertical" style={{ width: '100%', marginTop: '16px', textAlign: 'center' }}>
+            <Button type="primary" onClick={handleLoadMore} loading={loadingEmails}>
+              Load More
+            </Button>
+          </Space>
       </div>
+      {
+        emailSelected && (
+          <Drawer title="Email Preview" onClose={() => setShowDetails(false)} open={showDetails} placement='left' width={680}>
+            <EmailRenderPreview email={emailSelected} />
+          </Drawer>
+        )
+      }
     </>
   )
 }

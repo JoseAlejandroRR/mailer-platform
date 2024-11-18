@@ -17,9 +17,15 @@ Parameters:
       - "dev"
       - "prod"
       - "qa"
+
   SparkPostKey:
     Type: String
     Description: "API Key for SparkPost"
+
+  SESIdentityName:
+    Type: String
+    Default: "prototyper.dev"
+    Description: Domain address validated for AWS SES
 
   
 Resources:
@@ -124,11 +130,13 @@ Resources:
             Method: ANY
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !Ref EmailQueue
+            QueueName: !GetAtt EmailQueue.QueueName
         - DynamoDBCrudPolicy:
             TableName: !Ref EmailTrackerTable
         - DynamoDBCrudPolicy:
             TableName: !Ref ProviderTable
+        - SESCrudPolicy:
+            IdentityName: !Ref SESIdentityName
 
 Outputs:
   EmailQueueUrl:

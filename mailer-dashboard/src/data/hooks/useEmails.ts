@@ -1,13 +1,15 @@
 import { useState } from "react"
 import { EmailDto } from "../models/EmailDto"
-import EmailsServiceAPI from "../services/EmailsServiceAPI"
+import EmailsServiceAPI, { EmailCursor } from "../services/EmailsServiceAPI"
 import { EmailStatus } from "../models/EmailStatus"
 import { CreateEmailDto } from "../models/CreateEmailDto"
 
 const emailService = new EmailsServiceAPI()
 
 type getEmailsByStatusProps = {
-  status: EmailStatus
+  status: EmailStatus,
+  cursor?: EmailCursor,
+  limit?: number
 }
 
 const useEmails = () => {
@@ -18,8 +20,9 @@ const useEmails = () => {
   const getEmailsByStatus = async (opc: getEmailsByStatusProps): Promise<EmailDto[]> => {
     setLoading(true)
     try {
-      const data = await emailService.getAll(opc.status)
-      setEmails(data)
+      const data = await emailService.getAll(opc.status, opc.limit, opc.cursor)
+      setEmails([...data])
+
       return data
     } catch (err) {
       setError((err as Error).message)

@@ -6,4 +6,5 @@ export enum EmailStatus {
   OPENED = 'OPENED',
   FAILED = 'FAILED',
   MAX_TRIED = 'MAX_TRIED',
+  DRAFT = 'DRAFT',
 }

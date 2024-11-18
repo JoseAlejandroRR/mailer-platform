@@ -6,7 +6,7 @@ dayjs.extend(relativeTime)
 export const DateTimetoShortText = (date: Date) => {
   const startDate = dayjs(date)
 
-  return startDate.format('YYYY-MM-DD')
+  return startDate.format('DD-MM-YYYY')
 }
 
 export const DateToShortTextFormat = (date: Date): string => {
