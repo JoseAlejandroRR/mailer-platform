@@ -10,6 +10,7 @@ export class EmailDto {
   to!: EmailAddressDto[]
   cc!: EmailAddressDto[]
   bcc!: EmailAddressDto[]
+  provider?: string
   createdAt!: Date
   updatedAt!: Date
 }

@@ -1,11 +1,11 @@
-import { Button, Col, Divider, Drawer, notification, Popconfirm, Popover, Row, Space, Table, TableProps, Tag, Tooltip, Typography } from 'antd'
+import { Button, Col, Divider, Drawer, notification, Popconfirm, Row, Space, Table, TableProps, Tooltip, Typography } from 'antd'
 import { EmailProviderDto } from '../../data/models/ProviderEmailDto'
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { EmailProviderStatus } from '../../data/models/EmailProviderStatus'
-import { DateToTextRelative } from '../../data/utils'
+import { EditOutlined, DeleteOutlined, PlusOutlined, UndoOutlined, EyeOutlined } from '@ant-design/icons'
 import useProviders from '../../data/hooks/useProviders'
 import { useEffect, useState } from 'react'
 import ProviderForm from '../../UI/components/provider-form/ProviderForm'
+import DatetimeView from '../../UI/components/datetime-view/DatetimeView'
+import ProviderStatusView from '../../UI/components/providers/ProviderStatusView'
 
 const { Title } = Typography
 
@@ -13,6 +13,7 @@ const { Title } = Typography
 const ProvidesPage = () => {
   const { providers, getAllProviders, deleteById, loading } = useProviders()
   const [ showForm, setShowForm ] = useState<boolean>(false)
+  const [ showDetails, setShowDetails ] = useState<boolean>(false)
   const [ hasChanges, setHasChanges ] = useState<boolean>(false)
   const [ currentProvider, setCurrentProvider ] = useState<EmailProviderDto | null>(null)
 
@@ -52,11 +53,7 @@ const ProvidesPage = () => {
       key: 'status',
       render: (_, { status }) => (
         <>
-        <Popover title="Current Status">
-         <Tag color={status === EmailProviderStatus.ACTIVE ? 'green' : 'default'}>
-            { status }
-          </Tag>
-        </Popover>
+        <ProviderStatusView status={status} />
         </>
       ),
     },
@@ -67,13 +64,7 @@ const ProvidesPage = () => {
       // eslint-disable-next-line no-unused-vars
       render: (_, { createdAt }) => (
         <Space size="middle">
-          <Popover title={DateToTextRelative(createdAt)} content={
-            <>
-              { createdAt?.toISOString() }
-            </>
-          }>
-            { createdAt?.toUTCString() }
-          </Popover>
+          <DatetimeView datetime={createdAt} />
         </Space>
       ),
     },
@@ -83,13 +74,7 @@ const ProvidesPage = () => {
       // eslint-disable-next-line no-unused-vars
       render: (_, { updatedAt }) => (
         <Space size="middle">
-          <Popover title={DateToTextRelative(updatedAt)} content={
-            <>
-              { updatedAt?.toISOString() }
-            </>
-          }>
-            { updatedAt?.toUTCString() }
-          </Popover>
+          <DatetimeView datetime={updatedAt} />
         </Space>
       ),
     },
@@ -102,6 +87,9 @@ const ProvidesPage = () => {
         <Space size="middle">
           <Tooltip title="Edit">
             <Button onClick={() => handleEditProvider(record)} type="text" icon={<EditOutlined />} />
+          </Tooltip>
+          <Tooltip title="Details">
+            <Button onClick={() => handleShowProvider(record)} type="text" icon={<EyeOutlined />} />
           </Tooltip>
           <Popconfirm title="Confirm to delete" onConfirm={() => handleDeleteProvider(record)}>
             <Button type="text" icon={<DeleteOutlined />} />
@@ -121,6 +109,15 @@ const ProvidesPage = () => {
     setHasChanges(false)
     setCurrentProvider(provider)
     setShowForm(true)
+  }
+
+  const handleShowProvider = async (provider: EmailProviderDto) => {
+    setCurrentProvider(provider)
+    setShowDetails(true)
+  }
+
+  const handleRefresh = async () => {
+   await getAllProviders()
   }
 
   const handleDeleteProvider = async (provider: EmailProviderDto) => {
@@ -157,6 +154,7 @@ const ProvidesPage = () => {
         </Col>
         <Col>
           <Space>
+            <Button icon={<UndoOutlined />} onClick={handleRefresh}>Refresh</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleNewProvider}>Register</Button>
           </Space>
         </Col>
@@ -166,6 +164,35 @@ const ProvidesPage = () => {
       </div>
       <Drawer title="Provider Form" onClose={handleCloseForm} open={showForm}>
         <ProviderForm provider={currentProvider ?? null} onDataChange={handleDataChanged} />
+      </Drawer>
+      <Drawer title="Provider Details" onClose={() => setShowDetails(false)} open={showDetails} placement="left" width={520}>
+        {
+          currentProvider && (
+            <>
+            <Title level={3}>{currentProvider?.name}</Title>
+            <Divider />
+            <Title level={5}>Status: <ProviderStatusView status={currentProvider!.status} /> </Title>
+            <Title level={5}>Priority: {currentProvider?.priority}</Title>
+            <Title level={5}>Updated At: <DatetimeView datetime={currentProvider!.updatedAt} /></Title>
+            {
+              currentProvider?.log && (
+                <>
+                <Title level={5}>Error Log:</Title>
+                <div
+                  dangerouslySetInnerHTML={{ __html: currentProvider?.log ?? '' }}
+                  style={{
+                    border: '1px solid #ccc',
+                    padding: '10px',
+                    borderRadius: '5px',
+                    backgroundColor: '#f9f9f9',
+                  }}
+                />
+                </>
+              )
+            }
+            </>
+          )
+        }
       </Drawer>
     </>
   )

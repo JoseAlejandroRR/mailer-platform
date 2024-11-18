@@ -5,6 +5,7 @@ export class EmailProviderDto {
   name!: string
   priority!: number
   status!: EmailProviderStatus
+  log!: string
   createdAt!: Date
   updatedAt!: Date
 }

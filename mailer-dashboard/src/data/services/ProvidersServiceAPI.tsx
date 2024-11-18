@@ -20,6 +20,7 @@ class ProvidersServiceAPI extends BackendService {
         name: item.name,
         priority: item.priority,
         status: item.status,
+        log: item.log,
         createdAt: new Date(item.createdAt),
         updatedAt: new Date(item.updatedAt),
       })
@@ -42,6 +43,7 @@ class ProvidersServiceAPI extends BackendService {
       name: data.name,
       priority: data.priority,
       status: data.status,
+      log: data.log,
       createdAt: new Date(data.createdAt),
       updatedAt: new Date(data.updatedAt),
     })

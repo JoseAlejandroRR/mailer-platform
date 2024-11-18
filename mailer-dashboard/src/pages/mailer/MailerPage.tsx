@@ -12,13 +12,15 @@ import  './MailerPage.scss'
 import { AxiosError } from 'axios'
 import { EmailsTemplate } from './EmailsTemplate'
 
+const SENDER_ADDRESSES: string[] = (import.meta.env.VITE_SENDER_EMAIL_ADDRESSES ? import.meta.env.VITE_SENDER_EMAIL_ADDRESSES.toString().split(',') : [])
+
 type EmailRecord = EmailDto & { key: string }
 
 const MailerPage: React.FC = () => {
   const [form] = Form.useForm()
   const [emailRecords, setEmailRecords] = useState<EmailRecord[]>([])
   const [editorValue, setEditorValue] = useState('')
-  const { sendEmail, getEmailById } = useEmails()
+  const { sendEmail, getEmailById, loading } = useEmails()
   const [ lastEmail, setLastEmail ] = useState<EmailDto>()
   const [ isLoading, setIsLoading ] = useState<boolean>(false)
   const [ showPreview, setShowPreview ] = useState(false)
@@ -27,7 +29,10 @@ const MailerPage: React.FC = () => {
 
   useEffect(() => {
     const template = EmailsTemplate[0]
-    form.setFieldsValue({ subject: template.subject})
+    form.setFieldsValue({
+      subject: template.subject,
+      from: SENDER_ADDRESSES[0],
+    })
     setEditorValue(template.body)
   }, [])
 
@@ -45,8 +50,9 @@ const MailerPage: React.FC = () => {
       const newRecord: CreateEmailDto = {
         subject: values.subject,
         from: { name: values.from, email: values.from },
-        to: (values.to || '').split(',').map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
-        cc: (values.cc || '').split(',').filter((item: string) => item.length > 0)
+        to: (values.to || '').trim().split(',').map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
+        cc: (values.cc || '').trim().split(',')
+          .filter((item: string) => item.length > 0)
           .map((email: string) =>({ name:  email.trim(),  email:  email.trim() })),
         body: serializedBody,
         bcc: []
@@ -55,12 +61,15 @@ const MailerPage: React.FC = () => {
       const res = await handleSendEmail(newRecord)
       if (!res) return;
  
-      form.resetFields()
-      setEditorValue('')
+      form.setFieldsValue({
+        to: '',
+        cc: ''
+      })
     })
   }
 
   const handleSendEmail = async (input: CreateEmailDto): Promise<boolean> => {
+    setIsLoading(true)
     try {
       const email = await sendEmail(input)
       if (!email) {
@@ -87,13 +96,13 @@ const MailerPage: React.FC = () => {
         }
       }
       console.log('[handleSendEmail] Error:', err)
+    } finally {
+      setIsLoading(false)
     }
-
     return false
   }
 
   const handleRefreshStatus = async (email: EmailDto) => {
-    setIsLoading(true)
     try {
       const emailUpdated = await getEmailById(email.id)
 
@@ -101,11 +110,11 @@ const MailerPage: React.FC = () => {
         notification.info({ message: 'Email not found', placement: 'bottomRight' });
         return;
       }
-  
-      const arr = emailRecords.map((item) => item.id === email.id ? { ...item, status: EmailStatus.SENT } : item)
+
+      const arr = emailRecords.map((item) => item.id === email.id ? { ...emailUpdated, key: emailUpdated.id } : item)
       setEmailRecords([...arr])
-    } finally {
-      setIsLoading(false)
+    } catch(err) {
+      console.error('[Error]: ', err)
     }
   }
 
@@ -158,13 +167,13 @@ const MailerPage: React.FC = () => {
       // eslint-disable-next-line no-unused-vars
       render: (_, { to }) => (
         <>
-          {to.map((account) => {
+          {to.map((account, index) => {
             return (
               <Popover title={account.name} content={
                 <>
                   { account.email }
                 </>
-              } key={account.email}>
+              } key={index}>
                <Tag>
                   { account.email }
                 </Tag>
@@ -234,23 +243,16 @@ const MailerPage: React.FC = () => {
         <Col span={10}>
           <Card title="Recipients" bordered>
             <Form.Item
-              name="from"
               label="From"
-              rules={[
-                { required: true, message: 'Please enter a sender email' },
-                {
-                  validator: (_, value) => {
-                    if (!value || emailRegex.test(value)) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(
-                      new Error('From must be a valid email address')
-                    )
-                  },
-                },
-              ]}
+              name="from"
             >
-              <Input placeholder="Enter sender email" />
+              <Select>
+                {
+                  SENDER_ADDRESSES.map((email, index) => (
+                    <Select.Option key={index} value={email}>{ email }</Select.Option>
+                  ))
+                }
+              </Select>
             </Form.Item>
             <Form.Item name="to" label="To"
               rules={[
@@ -310,6 +312,7 @@ const MailerPage: React.FC = () => {
                   type="primary"
                   icon={<SendOutlined />}
                   onClick={handleForm}
+                  loading={isLoading}
                   block
                 >
                   Send Email
@@ -331,7 +334,7 @@ const MailerPage: React.FC = () => {
         </Col>
       </Row>
       {
-        isLoading && (
+        loading && (
           <div className="loading-spinner">
             <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
           </div>

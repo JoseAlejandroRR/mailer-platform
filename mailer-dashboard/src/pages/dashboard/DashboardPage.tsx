@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
+import { Button, Card, Col, Divider, Popover, Row, Segmented, Space, Statistic, Table, TableProps, Tag, Tooltip } from 'antd'
 import { CheckCircleOutlined, ClockCircleOutlined, LineChartOutlined, WarningOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Divider, notification, Popover, Row, Segmented, Space, Statistic, Table, TableProps, Tag, Tooltip } from 'antd'
 import useEmails from '../../data/hooks/useEmails'
 import { EmailStatus } from '../../data/models/EmailStatus'
-import { EmailDto } from '../../data/models/EmailDto';
+import { EmailDto } from '../../data/models/EmailDto'
 import { DateToShortTextFormat, DateToTextRelative } from '../../data/utils'
 import { useIsFirstRender } from '../../UI/utils'
 
@@ -109,10 +109,18 @@ const columns: TableProps<EmailDto>['columns'] = [
     title: 'Action',
     key: 'action',
     // eslint-disable-next-line no-unused-vars
-    render: () => (
+    render: (_, record) => (
       <Space size="middle">
         <Tooltip title="Tracking">
-          <Button icon={<LineChartOutlined /> } type='text' onClick={() => notification.info({ message: 'Soon...', placement: 'bottomRight' })} />
+          { record.provider && (
+           <Popover title={"Tracking"} content={
+            <>
+              Sent with: { record.provider }
+            </>
+          }>
+            <Button icon={<LineChartOutlined /> } type='text' />
+          </Popover>
+          )}
         </Tooltip>
       </Space>
     ),

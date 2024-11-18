@@ -38,7 +38,7 @@ const useProviders = () => {
     return null
   }
 
-  const createProvider = async (input: CreateEmailProviderDto): Promise<EmailProviderDto | null> => {
+  const createProvider = async (input: CreateEmailProviderDto): Promise<EmailProviderDto> => {
     setLoading(true)
     try {
       const data = await providerService.createOne(input)
@@ -49,7 +49,6 @@ const useProviders = () => {
       throw err
     } finally {
       setLoading(false)
-      return null
     }
   }
 

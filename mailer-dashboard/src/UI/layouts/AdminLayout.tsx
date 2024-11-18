@@ -8,7 +8,7 @@ import {
   SendOutlined,
   ApiOutlined
 } from '@ant-design/icons'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 const { Header, Sider, Content } = Layout
 
@@ -20,6 +20,7 @@ export default function AdminLayout() {
   } = theme.useToken()
 
   const navigate = useNavigate()
+  const location = useLocation()
 
   const goTo = (url: string) => {
     navigate(url)
@@ -37,24 +38,25 @@ export default function AdminLayout() {
           theme="dark"
           mode="inline"
           defaultSelectedKeys={['1']}
+          selectedKeys={[location.pathname]}
           items={[
             {
-              key: '1',
+              key: '/',
               icon: <HomeOutlined />,
               label: 'Dashboard',
               onClick: () => goTo('/')
             },
             {
-              key: '2',
+              key: '/mailer/',
               icon: <SendOutlined />,
               label: 'Mailer',
-              onClick: () => goTo('/mailer')
+              onClick: () => goTo('/mailer/')
             },
             {
-              key: '3',
+              key: '/providers/',
               icon: <ApiOutlined />,
               label: 'Providers',
-              onClick: () => goTo('/providers')
+              onClick: () => goTo('/providers/')
             },
           ]}
         />

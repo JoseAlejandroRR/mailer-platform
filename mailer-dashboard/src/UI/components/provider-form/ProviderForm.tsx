@@ -20,7 +20,7 @@ const initialValues = {
 }
 
 const ProviderForm: React.FC<ProviderFormProps> = ({ provider, onDataChange }) => {
-  const { createProvider, updateProvider } = useProviders()
+  const { createProvider, updateProvider, loading } = useProviders()
   const [ form ] = Form.useForm()
 
   useEffect(() => {
@@ -106,7 +106,7 @@ const ProviderForm: React.FC<ProviderFormProps> = ({ provider, onDataChange }) =
 
       <Divider />
       <Form.Item>
-        <Button type="primary" htmlType="submit" block>
+        <Button type="primary" htmlType="submit" loading={loading} block>
           Submit
         </Button>
       </Form.Item>
