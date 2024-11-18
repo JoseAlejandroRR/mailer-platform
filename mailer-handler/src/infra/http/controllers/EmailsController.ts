@@ -5,6 +5,9 @@ import { CreateEmailDto } from '@/domain/dto/CreateEmailDto'
 import EmailService from '@/application/EmailService'
 import { EmailStatus } from '@/domain/enum/EmailStatus'
 import EmailSenderManager from '@/application/EmailSenderManager'
+import ViewModel from '@/infra/views/ViewModel'
+import EmailViewModel from '@/infra/views/EmailViewModel'
+import { CursorId } from '@/domain/repositories/IEmailRepository'
 
 @injectable()
 class EmailsController extends BaseController {
@@ -24,7 +27,7 @@ class EmailsController extends BaseController {
       return ctx.json({ success: false, data: null }, 400)
     }
 
-    return ctx.json(email)
+    return ctx.json(ViewModel.createOne(EmailViewModel, email), 201)
   }
 
   async getById(ctx: Context) {
@@ -32,7 +35,7 @@ class EmailsController extends BaseController {
 
     const email = await this.service.getById(emailId)
 
-    return ctx.json(email)
+    return ctx.json(ViewModel.createOne(EmailViewModel, email))
   }
 
   async deleteById(ctx: Context) {
@@ -44,13 +47,20 @@ class EmailsController extends BaseController {
   }
 
   async getEmailByStatus(ctx: Context) {
-    const query = ctx.req.query()
+    const { status, cursorId, createdAt, limit } = ctx.req.query()
+    let cursor: CursorId | undefined;
+
+    if (cursorId && createdAt) {
+      cursor = { status: status  as EmailStatus, id: cursorId, createdAt}
+    }
 
     const emails = await this.service.getEmailByStatus({
-      status: query.status as EmailStatus
+      status: status as EmailStatus,
+      take: Number(limit),
+      cursorKey: cursor
     })
 
-    return ctx.json(emails)
+    return ctx.json(ViewModel.createMany(EmailViewModel, emails))
   }
 }
 

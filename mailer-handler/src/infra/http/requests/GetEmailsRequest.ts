@@ -25,6 +25,13 @@ import { EmailStatus } from '@/domain/enum/EmailStatus'
  *         type: string
  *         example: SENT
  *         required: true
+ *       - name: cursorId
+ *         in: query
+ *         type: string
+ *         example: 4bcdb09e-9f6d-4e18-919a-cbabff31e8b3
+ *       - name: createdAt
+ *         in: query
+ *         type: string
  *     responses:
  *       200:
  *         description: Get Emails by Status

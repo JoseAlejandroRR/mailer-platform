@@ -1,5 +1,5 @@
 import ViewModel from './ViewModel'
-import { Email } from '@/domain/models/Email'
+import { EmailProvider } from '@/domain/models/EmailProvider'
 
 /**
  * A view model for a EmailProvider Model.
@@ -8,7 +8,7 @@ import { Email } from '@/domain/models/Email'
  * components:
  *   schemas:
  *     EmailProviderViewModel:
- *       description: EmailProvider Object Structure
+ *       description: providerProvider Object Structure
  *       properties:
  *         id:
  *           type: string
@@ -22,6 +22,8 @@ import { Email } from '@/domain/models/Email'
  *         status:
  *           type: string
  *           enum: [ACTIVE, DISABLED, FAILED]
+ *         log:
+ *           type: string
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -32,20 +34,18 @@ import { Email } from '@/domain/models/Email'
  *           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}\w{1}$'
  */
 
-class EmailProviderViewModel extends ViewModel<Email> {
-  constructor(email: Email) {
+class EmailProviderViewModel extends ViewModel<EmailProvider> {
+  constructor(provider: EmailProvider) {
     const view: Record<string, any> = {
-      id: email.id,
-      body: email.body,
-      status: email.status,
-      subject: email.subject,
-      from: { email: email.from.email, name: email.from.name },
-      to: email.to.map(addr => ({ email: addr.email, name: addr.name })),
-      cc: email.cc.map(addr => ({ email: addr.email, name: addr.name })),
-      bcc: email.bcc.map(addr => ({ email: addr.email, name: addr.name })),
-      provider: email.provider ?? null,
-      createdAt: email.createdAt.toISOString(),
-      updatedAt: email.updatedAt.toISOString(),
+      id: provider.id,
+      name: provider.name,
+      priority: provider.priority,
+      status: provider.status,
+      type: provider.type,
+      endpointURL: provider.endpointURL,
+      log: provider.log,
+      createdAt: provider.createdAt.toISOString(),
+      updatedAt: provider.updatedAt.toISOString(),
     }
 
     super(view)
