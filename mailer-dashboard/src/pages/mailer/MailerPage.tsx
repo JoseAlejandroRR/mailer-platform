@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Row, Col, Card, Input, Button, Form, Tag, Table, TableProps, Tooltip, Popover, Space, notification, Segmented, Spin, Select, Drawer } from 'antd'
-import { EyeOutlined, LoadingOutlined, SendOutlined, UndoOutlined } from '@ant-design/icons'
+import { EyeOutlined, LoadingOutlined, SendOutlined, UndoOutlined, WarningOutlined } from '@ant-design/icons'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { EmailDto } from '../../data/models/EmailDto'
@@ -197,6 +197,13 @@ const MailerPage: React.FC = () => {
             value={status}
             options={[EmailStatus.QUEUED, EmailStatus.SENT, EmailStatus.FAILED]}
           />
+          {
+            status === EmailStatus.MAX_TRIED && (
+              <Tooltip title="MaxRetriesException">
+                <WarningOutlined style={{ color:'#c40000' }} />
+              </Tooltip>
+            )
+          }
         </Space>
       ),
     },

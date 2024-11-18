@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Card, Col, Divider, Popover, Row, Segmented, Space, Statistic, Table, TableProps, Tag, Tooltip } from 'antd'
-import { CheckCircleOutlined, ClockCircleOutlined, LineChartOutlined, WarningOutlined } from '@ant-design/icons'
+import { ClockCircleOutlined, LineChartOutlined, WarningOutlined } from '@ant-design/icons'
 import useEmails from '../../data/hooks/useEmails'
 import { EmailStatus } from '../../data/models/EmailStatus'
 import { EmailDto } from '../../data/models/EmailDto'
@@ -137,6 +137,14 @@ const emailDataInitial: Record<EmailStatus, EmailDto[]> = {
   [EmailStatus.MAX_TRIED]: []
 }
 
+const DashboardStatus = {
+  [EmailStatus.QUEUED]: { title: EmailStatus.QUEUED, color: '#0061b3', status: EmailStatus.QUEUED, icon: <ClockCircleOutlined /> },
+  [EmailStatus.SENT]: { title: EmailStatus.SENT, color: '#3f8600', status: EmailStatus.SENT, icon: <ClockCircleOutlined /> },
+  [EmailStatus.MAX_TRIED]: { title: 'MAX RETRY', color: '#333', status: EmailStatus.MAX_TRIED, icon: <WarningOutlined />},
+  [EmailStatus.FAILED]: { title: EmailStatus.FAILED, color: '#cf1322', status: EmailStatus.FAILED, icon: <WarningOutlined />},
+}
+
+
 const DashboardPage: React.FC = () => {
   const [ currentView, setCurrentView ] = useState<EmailStatus>(EmailStatus.SENT)
   const [ emailData, setEmailData ] = useState(emailDataInitial)
@@ -145,6 +153,7 @@ const DashboardPage: React.FC = () => {
     EmailStatus.SENT,
     EmailStatus.QUEUED,
     EmailStatus.FAILED,
+    EmailStatus.MAX_TRIED,
   ])
 
   const istFirstRender = useIsFirstRender()
@@ -169,46 +178,33 @@ const DashboardPage: React.FC = () => {
   }, [currentView])
 
   const handleCurrentView = (option: any) => {
-    setCurrentView(option)
+    const panel = Object.values(DashboardStatus).find((item) => item.title === option)
+    setCurrentView(panel!.status)
   }
 
   return (
     <>
       <div className="page-dashboard">
         <Row gutter={20}>
-          <Col span={8}>
-            <Card>
-              <Statistic
-                title="Sent"
-                value={emailData[EmailStatus.SENT].length}
-                valueStyle={{ color: '#3f8600' }}
-                prefix={<CheckCircleOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col span={8}>
-            <Card>
-              <Statistic
-                title="Queue"
-                value={emailData[EmailStatus.QUEUED].length}
-                valueStyle={{ color: '#0061b3' }}
-                prefix={<ClockCircleOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col span={8}>
-            <Card>
-              <Statistic
-                title="Failed"
-                value={emailData[EmailStatus.FAILED].length}
-                valueStyle={{ color: '#cf1322' }}
-                prefix={<WarningOutlined />}
-              />
-            </Card>
-          </Col>
+          {
+            Object.values(DashboardStatus).map((panel, index) => (
+              <>
+              <Col span={6} key={index}>
+                <Card>
+                  <Statistic
+                    title={panel.title}
+                    value={emailData[panel.status].length}
+                    valueStyle={{ color: panel.color }}
+                    prefix={panel.icon}
+                  />
+                </Card>
+              </Col>
+            </>
+            ))
+          }
         </Row>
         <Divider />
-        <Segmented options={[EmailStatus.SENT, EmailStatus.QUEUED, EmailStatus.OPENED, EmailStatus.FAILED]}
+        <Segmented options={Object.values(DashboardStatus).map((panel) => panel.title)}
           onChange={handleCurrentView} block />
         <Divider />
         <Table<EmailDto> columns={columns} dataSource={emailData[currentView]} loading={loadingEmails}  />
