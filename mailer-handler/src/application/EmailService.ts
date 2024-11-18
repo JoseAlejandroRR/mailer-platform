@@ -1,6 +1,6 @@
 import { CreateEmailDto } from '@/domain/dto/CreateEmailDto'
 import { Email } from '@/domain/models/Email'
-import { IEmailRepository } from '@/domain/repositories/IEmailRepository'
+import { CursorId, IEmailRepository } from '@/domain/repositories/IEmailRepository'
 import { EmailStatus } from '@/domain/enum/EmailStatus'
 import { ProviderIds } from '@/domain/ProviderIds'
 import { inject, injectable } from 'tsyringe'
@@ -12,6 +12,8 @@ interface getEmailByStatusProps {
   status: EmailStatus,
   take?: number,
   skip?: number,
+  cursorKey?: CursorId,
+  order?: 'ASC' | 'DESC',
 }
 
 @injectable()
@@ -54,9 +56,11 @@ class EmailService {
   }
 
   async getEmailByStatus(options: getEmailByStatusProps): Promise<Email[]> {
-    const { status } = Object.assign(options, { take: 10, skip: 0 })
+    const { status } = Object.assign({ take: 20, skip: 0, order: 'DESC' }, options)
 
-    const emails = await this.emailRepository.getEmailsByStatus(status, 'DESC')
+    const emails = await this.emailRepository.getEmailsByStatus(
+      status, options.order!, options.take, options.cursorKey
+    )
 
     return emails
   }

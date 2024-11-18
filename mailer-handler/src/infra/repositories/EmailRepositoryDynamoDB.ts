@@ -1,6 +1,6 @@
 import { Email } from '@/domain/models/Email'
 import BaseRepositoryDynamoDB from './BaseRepositoryDynamoDB'
-import { IEmailRepository } from '@/domain/repositories/IEmailRepository'
+import { CursorId, IEmailRepository } from '@/domain/repositories/IEmailRepository'
 import { EmailStatus } from '@/domain/enum/EmailStatus'
 import { QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { injectable } from 'tsyringe'
@@ -37,34 +37,36 @@ class EmailRepositoryDynamoDB extends BaseRepositoryDynamoDB<Email>
       return false
     }
   }
-  
+
   async getEmailsByStatus(
     status: EmailStatus,
-    order: 'ASC' | 'DESC' = 'ASC',
+    order: 'ASC' | 'DESC' = 'DESC',
     limit: number = 20,
-    startKey?: string
+    startKey?: { status: EmailStatus; createdAt: string }
   ): Promise<Email[]> {
+
     try {
       const params = {
         TableName: this.tableName,
         IndexName: 'StatusCreatedAtIndex',
         KeyConditionExpression: '#status = :status',
         ExpressionAttributeNames: {
-            '#status': 'status',
+          '#status': 'status',
         },
         ExpressionAttributeValues: {
-            ':status': status,
+          ':status': status,
         },
-        ScanIndexForward: order === 'ASC',
+        ScanIndexForward: order === 'DESC',
         Limit: limit,
-        ...(startKey ? { ExclusiveStartKey: { id: startKey } } : {} ),
+        ...(startKey ? { ExclusiveStartKey: { ...startKey } } : {}),
       }
+
       const result = await this.dynamoDbClient.send(new QueryCommand(params))
 
       const emails = (result.Items || []).map((item) => Email.fromJSON(item))
 
       return emails
-    } catch(err) {
+    } catch (err) {
       console.log('[getEmailsByStatus]: Error:', err)
     }
     return []

@@ -11,8 +11,8 @@ export class EmailProvider implements ISerializable {
   public type: ProviderType
   public endpointURL?: string
   public log?: string
-  public createdAt?: Date
-  public updatedAt?: Date
+  public createdAt: Date
+  public updatedAt: Date
 
   constructor(data: Record<string, any>) {
     this.id = data.id
